@@ -1,5 +1,4 @@
-# TRANS
-Official implementation for paper "Predictive Modeling with Temporal Graphical Representation on Electronic Health Records"
+# GT2
 
 ## Requirements
 
@@ -17,8 +16,6 @@ Pyhealth (1.1.4)
 
 For MIMIC-III and MIMIC-IV: refer to https://pyhealth.readthedocs.io/en/latest/api/datasets.html; 
 
-For CCAE: Run process_ccae.ipynb in the data folder.
-
 
 ## Training & Evaluation
 
@@ -28,13 +25,3 @@ To train the model and baselines in the paper, run this command:
 python train.py --model <TRANS/Transformer/...> --dataset <mimic3/mimic4/...>
 ```
 
-## References
-If you find this repository useful in your research, please cite the following paper:
-```
-@inproceedings{chen2024trans,
-  title={Predictive Modeling with Temporal Graphical Representation on Electronic Health Records},
-  author={Chen, Jiayuan and Yin, Changchang and Wang, Yuanlong and Zhang, Ping},
-  booktitle={International Joint Conference on Artificial  Intelligence},
-  year={2024}
-}
-```
