@@ -1,0 +1,4 @@
+name: envname
+channels:
+  - defaults
+prefix: /home/shivani_2221cs18/anaconda3/envs/envname
