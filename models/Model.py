@@ -60,6 +60,8 @@ class TRANS(nn.Module):
         for feature_key in self.feature_keys:
             self.spatialencoder[feature_key] = nn.Linear(self.pe*2, embedding_dim)#.to(self.device)
         self.alpha = 0.8
+        self.classifier = nn.Linear(264, output_size)
+        self.gcn = GCNConv(embedding_dim1, embedding_dim1)
 
     def add_feature_transform_layer(self, feature_key: str):
         tokenizer = self.feat_tokenizers[feature_key]
@@ -115,8 +117,25 @@ class TRANS(nn.Module):
                     graph_list[i]['visit'].x = torch.cat([pe[i].repeat(num_visit, 1), timevec],dim=-1)
         return Batch.from_data_list(graph_list)
     
-    def forward(self, batchdata):
+    def forward(self, batchdata):  
         seq_logits, Patient_emb = self.process_seq(batchdata[0])
         graph_data = self.process_graph_fea(batchdata[1], Patient_emb).to(self.device)
-        out = self.alpha * self.graphmodel(graph_data.edge_index_dict, graph_data) + (1-self.alpha) * seq_logits
-        return out
+        out = self.alpha * self.graphmodel(graph_data.edge_index_dict, graph_data) + (1-self.alpha) * seq_logits 
+        patient_features = out  # Shape: [batch_size, emb_dim]  
+        batch_size = patient_features.size(0)  
+
+        # Compute cosine similarity between patient embeddings  
+        similarity_matrix = F.cosine_similarity(patient_features.unsqueeze(1), patient_features.unsqueeze(0), dim=-1)  # Shape: [batch_size, batch_size]  
+
+        # Define edges based on a similarity threshold or k-nearest neighbors  
+        edge_index = (similarity_matrix > 0.9).nonzero(as_tuple=False).t()  # Shape: [2, num_edges]  
+        edge_index = edge_index.to(self.device)  # Ensure edges are on the same device  
+
+        # Create a PyG Data object for the patient graph  
+        patient_graph = Data(x=patient_features, edge_index=edge_index)  # x: [batch_size, emb_dim], edge_index: [2, num_edges]      
+        patient_graph_out = self.gcn(patient_graph.x, patient_graph.edge_index)  # Shape: [batch_size, emb_dim]  
+#         print(patient_graph_out.shape) #[128,128]
+#         logits = torch.matmul(patient_graph_out, self.classifier_weight)  # Linear layer for classification  
+        logits=self.classifier(patient_graph_out)
+
+        return logits
